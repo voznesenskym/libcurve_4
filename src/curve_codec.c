@@ -1111,7 +1111,7 @@ server_task (void *args)
     return NULL;
 }
 //  @end
-static void server_worker (void *args, zctx_t *ctx, void *pipe);
+static void mv_server_worker (void *args, zctx_t *ctx, void *pipe);
 
 void *mv_codec_server_worker() {
     bool verbose = true;
@@ -1141,7 +1141,7 @@ void *mv_codec_server_worker() {
     int thread_nbr;
     for (thread_nbr = 0; thread_nbr < 3; thread_nbr++) {
         printf("new zthread_fork \n");
-        zthread_fork (ctx, server_worker, NULL);
+        zthread_fork (ctx, mv_server_worker, NULL);
     }
 
     zmq_proxy (router_socket, dealer_socket, NULL);
@@ -1195,6 +1195,28 @@ void curve_codec_test_2 (bool verbose) {
     }
     // zthread_new(mv_codec_server_worker, &verbose);
     mv_codec_server_worker();
+}
+
+static void
+mv_server_worker (void *args, zctx_t *ctx, void *pipe)
+{
+    void *worker = zsocket_new (ctx, ZMQ_DEALER);
+    zsocket_connect (worker, "inproc://backend");
+
+    while (true) {
+        //  The DEALER socket gives us the reply envelope and message
+        printf("expecting frames \n");
+        zframe_t *sender = zframe_recv (router_socket);
+        
+        zframe_t *input = zframe_recv (router_socket);
+        
+        
+        assert (input);
+        zframe_t *output = curve_codec_execute (server, &input);
+        assert (output);
+        zframe_send (&sender, router_socket, ZFRAME_MORE);
+        zframe_send (&output, router_socket, 0);
+    }
 }
 
 static void
