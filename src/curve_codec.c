@@ -1206,7 +1206,7 @@ server_worker (void *args, zctx_t *ctx, void *pipe)
 }
 
 void *mv_server_task (void *args) {
-    
+    printf("new server task \n");
     //New Context
     zctx_t *ctx = zctx_new();
     assert(ctx);
@@ -1221,6 +1221,7 @@ void *mv_server_task (void *args) {
 
     int thread_nbr;
     for (thread_nbr = 0; thread_nbr < 3; thread_nbr++) {
+        printf("new zthread_fork \n");
         zthread_fork (ctx, server_worker, NULL);
     }
 
