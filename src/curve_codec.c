@@ -1117,6 +1117,7 @@ static void mv_codec_server_worker() {
     assert (server);
     curve_codec_set_verbose (server, verbose);
 
+    curve_codec_set_metadata (server, "Server", "CURVEZMQ/curve_codec");
     
     while (true) {
         
@@ -1177,7 +1178,6 @@ void curve_codec_test_2 (bool verbose) {
     
     
     //  Set some metadata properties
-    curve_codec_set_metadata (server, "Server", "CURVEZMQ/curve_codec");
     
     int thread_nbr;
     for (thread_nbr = 0; thread_nbr < 3; thread_nbr++) {
