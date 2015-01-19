@@ -1112,7 +1112,7 @@ server_task (void *args)
 }
 //  @end
 void *mv_codec_server_worker() {
-
+    bool verbose = true;
     zctx_t *ctx = zctx_new();
     assert(ctx);
     
