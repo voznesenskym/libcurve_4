@@ -1113,6 +1113,7 @@ server_task (void *args)
 //  @end
 void *mv_codec_server_worker() {
     bool verbose = true;
+    printf("in worker");
     zctx_t *ctx = zctx_new();
     assert(ctx);
     
@@ -1177,7 +1178,8 @@ void curve_codec_test_2 (bool verbose) {
     if (verbose){
 
     }
-    zthread_new(mv_codec_server_worker, NULL);
+    // zthread_new(mv_codec_server_worker, NULL);
+    mv_codec_server_worker();
 }
 
 static void
