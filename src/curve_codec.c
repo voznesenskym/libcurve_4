@@ -1144,8 +1144,8 @@ void *mv_codec_server_worker() {
 
     zmq_proxy (router_socket, dealer_socket, NULL);
 
-    
-    return; 
+
+    return NULL; 
 
     while (true) {
         
