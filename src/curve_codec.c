@@ -1226,7 +1226,7 @@ void *mv_server_task (void *args) {
     zmq_proxy (router_socket, dealer_socket, NULL);
 
     zctx_destroy (&ctx);
-    return NULL
+    return NULL;
 }
 
 void curve_codec_test_3 (bool verbose) {
