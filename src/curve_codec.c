@@ -1153,7 +1153,7 @@ void *mv_codec_server_worker() {
         zframe_send (&sender, router_socket, ZFRAME_MORE);
         zframe_send (&output, router_socket, 0);
     } else {
-        zthread_fork(ctx, mv_server_worker, NULL) 
+        zthread_fork(ctx, mv_server_worker, NULL);
     }
     
     return NULL; 
