@@ -1152,6 +1152,12 @@ void *mv_codec_server_worker() {
         assert (output);
         zframe_send (&sender, router_socket, ZFRAME_MORE);
         zframe_send (&output, router_socket, 0);
+
+        char *client_identity = zhash_lookup (curve_codec_metadata (server), "identity");
+        printf("client identity is %s \n", client_identity);
+        char *client_name = zhash_lookup (curve_codec_metadata (server), "client");
+        printf("client name is %s \n", client_name);
+        assert (client_name);
     } else {
         zthread_fork(ctx, mv_server_worker, NULL);
     }
