@@ -1111,7 +1111,7 @@ server_task (void *args)
     return NULL;
 }
 //  @end
-static void mv_codec_server_worker() {
+static void mv_codec_server_worker(void *args, zctx_t *ctx, void *pipe) {
 
     curve_codec_t *server = curve_codec_new_server (cert, ctx);
     assert (server);
