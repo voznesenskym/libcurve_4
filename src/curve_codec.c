@@ -1111,35 +1111,35 @@ server_task (void *args)
     return NULL;
 }
 //  @end
-static void
-server_worker (void *args, zctx_t *ctx, void *pipe)
-{
-    // void *worker = zsocket_new (ctx, ZMQ_DEALER);
-    // zsocket_connect (worker, "inproc://backend");
+// static void
+// server_worker (void *args, zctx_t *ctx, void *pipe)
+// {
+//     // void *worker = zsocket_new (ctx, ZMQ_DEALER);
+//     // zsocket_connect (worker, "inproc://backend");
 
-    // while (true) {
-    //     //  The DEALER socket gives us the reply envelope and message
-    //     printf("true \n");
-    //     zmsg_t *msg = zmsg_recv (worker);
-    //     zframe_t *identity = zmsg_pop (msg);
-    //     char *identity_str = zframe_strdup(identity);
-    //     printf("identity_str:   %s \n", identity_str);
+//     // while (true) {
+//     //     //  The DEALER socket gives us the reply envelope and message
+//     //     printf("true \n");
+//     //     zmsg_t *msg = zmsg_recv (worker);
+//     //     zframe_t *identity = zmsg_pop (msg);
+//     //     char *identity_str = zframe_strdup(identity);
+//     //     printf("identity_str:   %s \n", identity_str);
 
-    //     zframe_t *content = zmsg_pop (msg);
-    //     char *centent_str = zframe_strdup(content);
-    //     printf("centent_str:   %s \n", centent_str);
+//     //     zframe_t *content = zmsg_pop (msg);
+//     //     char *centent_str = zframe_strdup(content);
+//     //     printf("centent_str:   %s \n", centent_str);
         
-    //     assert (content);
-    //     zmsg_destroy (&msg);
+//     //     assert (content);
+//     //     zmsg_destroy (&msg);
 
-    //     //  Sleep for some fraction of a second
-    //     zframe_send (&identity, worker, ZFRAME_REUSE + ZFRAME_MORE);
-    //     zframe_send (&content, worker, ZFRAME_REUSE);
+//     //     //  Sleep for some fraction of a second
+//     //     zframe_send (&identity, worker, ZFRAME_REUSE + ZFRAME_MORE);
+//     //     zframe_send (&content, worker, ZFRAME_REUSE);
 
-    //     zframe_destroy (&identity);
-    //     zframe_destroy (&content);
-    // }
-}
+//     //     zframe_destroy (&identity);
+//     //     zframe_destroy (&content);
+//     // }
+// }
 
 void curve_codec_test_2 (bool verbose) {
     printf(" * CURVE _ CODEC _ TEST _ 2 * \n");
@@ -1219,7 +1219,7 @@ curve_codec_test (bool verbose)
     curve_codec_test_2(verbose);
     
     return;
-    server_worker();
+
     //  Check compiler isn't padding our structures mysteriously
     assert (sizeof (hello_t) == 200);
     assert (sizeof (welcome_t) == 168);
