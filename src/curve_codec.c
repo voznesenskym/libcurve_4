@@ -1215,15 +1215,15 @@ void *mv_server_task (void *args) {
     int rc = zsocket_bind (router_socket, "tcp://*:9000");
     assert (rc != -1);
     
-    void *backend = zsocket_new (ctx, ZMQ_DEALER);
-    zsocket_bind (backend, "inproc://backend");
+    void *dealer_socket = zsocket_new (ctx, ZMQ_DEALER);
+    zsocket_bind (dealer_socket, "inproc://backend");
 
     int thread_nbr;
     for (thread_nbr = 0; thread_nbr < 3; thread_nbr++) {
         zthread_fork (ctx, server_worker, NULL);
     }
 
-    zmq_proxy (frontend, backend, NULL);
+    zmq_proxy (router_socket, dealer_socket, NULL);
 
     zctx_destroy (&ctx);
     return NULL
