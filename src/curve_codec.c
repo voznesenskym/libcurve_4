@@ -1111,6 +1111,8 @@ server_task (void *args)
     return NULL;
 }
 //  @end
+static void server_worker (void *args, zctx_t *ctx, void *pipe);
+
 void *mv_codec_server_worker() {
     bool verbose = true;
     printf("in worker");
