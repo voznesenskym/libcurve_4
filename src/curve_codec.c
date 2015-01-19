@@ -1144,82 +1144,71 @@ server_worker (void *args, zctx_t *ctx, void *pipe)
 void curve_codec_test_2 (bool verbose) {
     printf(" * CURVE _ CODEC _ TEST _ 2 * \n");
     
-    //New Context
-    zctx_t *ctx = zctx_new();
-    assert(ctx);
+    printf("SERVER TASK");
     
-    //New dealer_socket
-    void *router_socket = zsocket_new(ctx, ZMQ_ROUTER);
-    int rc = zsocket_bind (router_socket, "tcp://*:9000");
+    bool verbose = true;
+    //  Install the authenticator
+    zctx_t *ctx = zctx_new ();
+    zauth_t *auth = zauth_new (ctx);
+    assert (auth);
+    zauth_set_verbose (auth, verbose);
+    zauth_configure_curve (auth, "*", CERTDIR);
+
+    
+    //MV: Router socket
+    void *router = zsocket_new (ctx, ZMQ_ROUTER);
+    int rc = zsocket_bind (router, "tcp://*:9010");
+    printf("\n server task bind \n");
     assert (rc != -1);
-    
+
+    //MV: Load the hardcoded cert
     zcert_t *cert = zcert_load (CERTDIR "/server.cert");
     assert (cert);
     
-    zcert_t *client_cert = zcert_load (CERTDIR "/client.cert");
-    assert (client_cert);
     
+    //MV: New "instance" of server
     curve_codec_t *server = curve_codec_new_server (cert, ctx);
     assert (server);
     curve_codec_set_verbose (server, verbose);
-    
+
     //  Set some metadata properties
     curve_codec_set_metadata (server, "Server", "CURVEZMQ/curve_codec");
-    
-    
-    
-    
+
+    //  Execute incoming frames until ready or exception
+    //  In practice we'd want a server instance per unique client
+    printf("pre true \n");
+    while (!curve_codec_connected (server)) {
+        printf("expecting frames \n");
+        zframe_t *sender = zframe_recv (router);
+        
+        zframe_t *input = zframe_recv (router);
+        
+        char *input_str = zframe_strdup(input);
+        printf("input_str is %s \n", input_str);
+        
+        assert (input);
+        zframe_t *output = curve_codec_execute (server, &input);
+        assert (output);
+        zframe_send (&sender, router, ZFRAME_MORE);
+        zframe_send (&output, router, 0);
+    }
+    //  Check client metadata
+    char *client_identity = zhash_lookup (curve_codec_metadata (server), "identity");
+    printf("client identity is %s \n", client_identity);
+    char *client_name = zhash_lookup (curve_codec_metadata (server), "client");
+    printf("client name is %s \n", client_name);
+    assert (client_name);
+    assert (streq (client_name, "CURVEZMQ/curve_codec"));
+
     bool finished = false;
     while (!finished) {
-        
-        // if  (!curve_codec_connected (server)) {
-            printf("expecting frames \n");
-            zframe_t *sender = zframe_recv (router_socket);
-            
-            zframe_t *input = zframe_recv (router_socket);
-            
-            
-            assert (input);
-            zframe_t *output = curve_codec_execute (server, &input);
-            assert (output);
-            zframe_send (&sender, router_socket, ZFRAME_MORE);
-            zframe_send (&output, router_socket, 0);
-            
-        // } else {
-
-            void *dealer_socket = zsocket_new (ctx, ZMQ_DEALER);
-            zsocket_bind (dealer_socket, "inproc://backend");
-
-            int thread_nbr;
-            for (thread_nbr = 0; thread_nbr < 3; thread_nbr++) {
-                printf("new zthread_fork \n");
-                zthread_fork (ctx, server_worker, NULL);
-            }
-
-            zmq_proxy (router_socket, dealer_socket, NULL);
-
-        //  Now act as echo service doing a full decode and encode
-            // zframe_t *sender = zframe_recv (router_socket);
-            // char *sender_str = zframe_strdup(sender);
-            // printf("sender_str is %s \n", sender_str);
-            
-            
-            
-            // zframe_t *encrypted = zframe_recv (router_socket);
-            // assert (encrypted);
-            // zframe_t *cleartext = curve_codec_decode (server, &encrypted);
-            
-            // char *cleartext_str = zframe_strdup(cleartext);
-            // printf("cleartext_str is %s \n", cleartext_str);
-            
-            // assert (cleartext);
-
-            // encrypted = curve_codec_encode (server, &cleartext);
-            // assert (encrypted);
-            // zframe_send (&sender, router_socket, ZFRAME_MORE);
-            // zframe_send (&encrypted, router_socket, 0);
-        
+        printf("send message \n");
     }
+//    curve_codec_destroy (&server);
+//    zcert_destroy (&cert);
+//    zauth_destroy (&auth);
+//    zctx_destroy (&ctx);
+    return NULL;
 }
 
 void
