@@ -1181,12 +1181,66 @@ void curve_codec_test_2 (bool verbose) {
     }
 }
 
+static void
+server_worker (void *args, zctx_t *ctx, void *pipe)
+{
+    void *worker = zsocket_new (ctx, ZMQ_DEALER);
+    zsocket_connect (worker, "inproc://backend");
+
+    while (true) {
+        //  The DEALER socket gives us the reply envelope and message
+        zmsg_t *msg = zmsg_recv (worker);
+        zframe_t *identity = zmsg_pop (msg);
+        zframe_t *content = zmsg_pop (msg);
+        assert (content);
+        zmsg_destroy (&msg);
+
+        //  Sleep for some fraction of a second
+        zframe_send (&identity, worker, ZFRAME_REUSE + ZFRAME_MORE);
+        zframe_send (&content, worker, ZFRAME_REUSE);
+
+        zframe_destroy (&identity);
+        zframe_destroy (&content);
+    }
+}
+
+void *mv_server_task (void *args) {
+    
+    //New Context
+    zctx_t *ctx = zctx_new();
+    assert(ctx);
+    
+    //New dealer_socket
+    void *router_socket = zsocket_new(ctx, ZMQ_ROUTER);
+    int rc = zsocket_bind (router_socket, "tcp://*:9000");
+    assert (rc != -1);
+    
+    void *backend = zsocket_new (ctx, ZMQ_DEALER);
+    zsocket_bind (backend, "inproc://backend");
+
+    int thread_nbr;
+    for (thread_nbr = 0; thread_nbr < 3; thread_nbr++) {
+        zthread_fork (ctx, server_worker, NULL);
+    }
+
+    zmq_proxy (frontend, backend, NULL);
+
+    zctx_destroy (&ctx);
+    return NULL
+}
+
+void curve_codec_test_3 (bool verbose) {
+    printf(" * CURVE _ CODEC _ TEST _ 3 * \n");
+
+    zthread_new (mv_server_task, NULL);
+}
+
 void
 curve_codec_test (bool verbose)
 {
     printf (" * curve_codec: ");
 
-    curve_codec_test_2(verbose);
+    curve_codec_test_3(verbose);
     
     return;
     
