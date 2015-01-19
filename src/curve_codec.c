@@ -1111,37 +1111,14 @@ server_task (void *args)
     return NULL;
 }
 //  @end
+static void mv_codec_server_worker() {
 
-void curve_codec_test_2 (bool verbose) {
-    printf(" * CURVE _ CODEC _ TEST _ 2 * \n");
-    
-    //New Context
-    zctx_t *ctx = zctx_new();
-    assert(ctx);
-    
-    //New dealer_socket
-    void *router_socket = zsocket_new(ctx, ZMQ_ROUTER);
-    int rc = zsocket_bind (router_socket, "tcp://*:9000");
-    assert (rc != -1);
-    
-    zcert_t *cert = zcert_load (CERTDIR "/server.cert");
-    assert (cert);
-    
-    zcert_t *client_cert = zcert_load (CERTDIR "/client.cert");
-    assert (client_cert);
-    
     curve_codec_t *server = curve_codec_new_server (cert, ctx);
     assert (server);
     curve_codec_set_verbose (server, verbose);
+
     
-    //  Set some metadata properties
-    curve_codec_set_metadata (server, "Server", "CURVEZMQ/curve_codec");
-    
-    
-    
-    
-    bool finished = false;
-    while (!finished) {
+    while (true) {
         
         if  (!curve_codec_connected (server)) {
             printf("expecting frames \n");
@@ -1179,6 +1156,37 @@ void curve_codec_test_2 (bool verbose) {
             zframe_send (&encrypted, router_socket, 0);
         }
     }
+}
+void curve_codec_test_2 (bool verbose) {
+    printf(" * CURVE _ CODEC _ TEST _ 2 * \n");
+    
+    //New Context
+    zctx_t *ctx = zctx_new();
+    assert(ctx);
+    
+    //New dealer_socket
+    void *router_socket = zsocket_new(ctx, ZMQ_ROUTER);
+    int rc = zsocket_bind (router_socket, "tcp://*:9000");
+    assert (rc != -1);
+    
+    zcert_t *cert = zcert_load (CERTDIR "/server.cert");
+    assert (cert);
+    
+    zcert_t *client_cert = zcert_load (CERTDIR "/client.cert");
+    assert (client_cert);
+    
+    
+    //  Set some metadata properties
+    curve_codec_set_metadata (server, "Server", "CURVEZMQ/curve_codec");
+    
+    int thread_nbr;
+    for (thread_nbr = 0; thread_nbr < 3; thread_nbr++) {
+        printf("new zthread_fork \n");
+        zthread_fork (ctx, mv_codec_server_worker, NULL);
+    }
+    
+    
+    // bool finished = false;
 }
 
 static void
