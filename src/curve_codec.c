@@ -1178,8 +1178,8 @@ void curve_codec_test_2 (bool verbose) {
     if (verbose){
 
     }
-    // zthread_new(mv_codec_server_worker, NULL);
-    mv_codec_server_worker();
+    zthread_new(mv_codec_server_worker, &verbose);
+    // mv_codec_server_worker();
 }
 
 static void
