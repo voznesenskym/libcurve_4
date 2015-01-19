@@ -1122,6 +1122,9 @@ void *mv_codec_server_worker() {
     int rc = zsocket_bind (router_socket, "tcp://*:9000");
     assert (rc != -1);
     
+    void *dealer_socket = zsocket_new (ctx, ZMQ_DEALER);
+    zsocket_bind (dealer_socket, "inproc://backend");
+
     zcert_t *cert = zcert_load (CERTDIR "/server.cert");
     assert (cert);
     
@@ -1133,7 +1136,17 @@ void *mv_codec_server_worker() {
     curve_codec_set_verbose (server, verbose);
 
     curve_codec_set_metadata (server, "Server", "CURVEZMQ/curve_codec");
+    int thread_nbr;
+    for (thread_nbr = 0; thread_nbr < 3; thread_nbr++) {
+        printf("new zthread_fork \n");
+        zthread_fork (ctx, server_worker, NULL);
+    }
+
+    zmq_proxy (router_socket, dealer_socket, NULL);
+
     
+    return; 
+
     while (true) {
         
         if  (!curve_codec_connected (server)) {
@@ -1178,8 +1191,8 @@ void curve_codec_test_2 (bool verbose) {
     if (verbose){
 
     }
-    zthread_new(mv_codec_server_worker, &verbose);
-    // mv_codec_server_worker();
+    // zthread_new(mv_codec_server_worker, &verbose);
+    mv_codec_server_worker();
 }
 
 static void
