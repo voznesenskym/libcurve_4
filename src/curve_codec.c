@@ -1114,7 +1114,7 @@ server_task (void *args)
 static void mv_server_worker (void *args, zctx_t *ctx, void *pipe);
 
 void *mv_codec_server_worker() {
-    bool verbose = true;
+    // bool verbose = true;
     printf("in worker");
     zctx_t *ctx = zctx_new();
     assert(ctx);
@@ -1147,46 +1147,7 @@ void *mv_codec_server_worker() {
     // zmq_proxy (router_socket, dealer_socket, NULL);
 
 
-    return NULL; 
-
-    while (true) {
-        
-        if  (!curve_codec_connected (server)) {
-            printf("expecting frames \n");
-            zframe_t *sender = zframe_recv (router_socket);
-            
-            zframe_t *input = zframe_recv (router_socket);
-            
-            
-            assert (input);
-            zframe_t *output = curve_codec_execute (server, &input);
-            assert (output);
-            zframe_send (&sender, router_socket, ZFRAME_MORE);
-            zframe_send (&output, router_socket, 0);
-            
-        } else {
-        //  Now act as echo service doing a full decode and encode
-            zframe_t *sender = zframe_recv (router_socket);
-            char *sender_str = zframe_strdup(sender);
-            printf("sender_str is %s \n", sender_str);
-            
-            
-            
-            zframe_t *encrypted = zframe_recv (router_socket);
-            assert (encrypted);
-            zframe_t *cleartext = curve_codec_decode (server, &encrypted);
-            
-            char *cleartext_str = zframe_strdup(cleartext);
-            printf("cleartext_str is %s \n", cleartext_str);
-            
-            assert (cleartext);
-
-            encrypted = curve_codec_encode (server, &cleartext);
-            assert (encrypted);
-            zframe_send (&sender, router_socket, ZFRAME_MORE);
-            zframe_send (&encrypted, router_socket, 0);
-        }
-    }
+    return NULL;
 }
 void curve_codec_test_2 (bool verbose) {
     printf(" * CURVE _ CODEC _ TEST _ 2 * \n");
@@ -1200,7 +1161,7 @@ void curve_codec_test_2 (bool verbose) {
 static void
 mv_server_worker (void *args, zctx_t *ctx, void *pipe)
 {
-
+    bool verbose = true;
     void *router_socket = zsocket_new(ctx, ZMQ_ROUTER);
     int rc = zsocket_bind (router_socket, "tcp://*:9000");
     assert (rc != -1);
