@@ -1201,7 +1201,19 @@ void curve_codec_test_2 (bool verbose) {
 
     bool finished = false;
     while (!finished) {
-        printf("send message \n");
+        //  Now act as echo service doing a full decode and encode
+        zframe_t *sender = zframe_recv (router);
+        zframe_t *encrypted = zframe_recv (router);
+        assert (encrypted);
+        zframe_t *cleartext = curve_codec_decode (server, &encrypted);
+        assert (cleartext);
+        if (memcmp (cleartext, "END", 3) == 0)
+            finished = true;
+        //  Echo message back
+        encrypted = curve_codec_encode (server, &cleartext);
+        assert (encrypted);
+        zframe_send (&sender, router, ZFRAME_MORE);
+        zframe_send (&encrypted, router, 0);
     }
 //    curve_codec_destroy (&server);
 //    zcert_destroy (&cert);
