@@ -1208,7 +1208,13 @@ server_worker (void *args, zctx_t *ctx, void *pipe)
         printf("true \n");
         zmsg_t *msg = zmsg_recv (worker);
         zframe_t *identity = zmsg_pop (msg);
+        char *identity_str = zframe_strdup(identity);
+        printf("identity_str:   %s \n", identity_str);
+
         zframe_t *content = zmsg_pop (msg);
+        char *centent_str = zframe_strdup(content);
+        printf("centent_str:   %s \n", centent_str);
+        
         assert (content);
         zmsg_destroy (&msg);
 
