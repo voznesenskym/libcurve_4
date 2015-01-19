@@ -1114,40 +1114,47 @@ server_task (void *args)
 static void mv_server_worker (void *args, zctx_t *ctx, void *pipe);
 
 void *mv_codec_server_worker() {
-    // bool verbose = true;
+    bool verbose = true;
     printf("in worker");
     zctx_t *ctx = zctx_new();
     assert(ctx);
     
     //New dealer_socket
-    // void *router_socket = zsocket_new(ctx, ZMQ_ROUTER);
-    // int rc = zsocket_bind (router_socket, "tcp://*:9000");
-    // assert (rc != -1);
+    void *router_socket = zsocket_new(ctx, ZMQ_ROUTER);
+    int rc = zsocket_bind (router_socket, "tcp://*:9000");
+    assert (rc != -1);
     
     void *dealer_socket = zsocket_new (ctx, ZMQ_DEALER);
     zsocket_bind (dealer_socket, "inproc://backend");
 
-    // zcert_t *cert = zcert_load (CERTDIR "/server.cert");
-    // assert (cert);
+    zcert_t *cert = zcert_load (CERTDIR "/server.cert");
+    assert (cert);
     
     zcert_t *client_cert = zcert_load (CERTDIR "/client.cert");
     assert (client_cert);
 
-    // curve_codec_t *server = curve_codec_new_server (cert, ctx);
-    // assert (server);
-    // curve_codec_set_verbose (server, verbose);
+    curve_codec_t *server = curve_codec_new_server (cert, ctx);
+    assert (server);
+    curve_codec_set_verbose (server, verbose);
 
-    // curve_codec_set_metadata (server, "Server", "CURVEZMQ/curve_codec");
-    int thread_nbr;
-    for (thread_nbr = 0; thread_nbr < 3; thread_nbr++) {
-        printf("new zthread_fork \n");
-        zthread_fork (ctx, mv_server_worker, NULL);
+    curve_codec_set_metadata (server, "Server", "CURVEZMQ/curve_codec");
+    
+        
+    if  (!curve_codec_connected (server)) {
+        printf("expecting frames \n");
+        zframe_t *sender = zframe_recv (router_socket);
+        
+        zframe_t *input = zframe_recv (router_socket);
+        
+        
+        assert (input);
+        zframe_t *output = curve_codec_execute (server, &input);
+        assert (output);
+        zframe_send (&sender, router_socket, ZFRAME_MORE);
+        zframe_send (&output, router_socket, 0);
     }
-
-    // zmq_proxy (router_socket, dealer_socket, NULL);
-
-
-    return NULL;
+    
+    return NULL; 
 }
 void curve_codec_test_2 (bool verbose) {
     printf(" * CURVE _ CODEC _ TEST _ 2 * \n");
@@ -1161,36 +1168,22 @@ void curve_codec_test_2 (bool verbose) {
 static void
 mv_server_worker (void *args, zctx_t *ctx, void *pipe)
 {
-    bool verbose = true;
-    void *router_socket = zsocket_new(ctx, ZMQ_ROUTER);
-    int rc = zsocket_bind (router_socket, "tcp://*:9000");
-    assert (rc != -1);
-
-    zcert_t *cert = zcert_load (CERTDIR "/server.cert");
-    assert (cert);
-
-
-    curve_codec_t *server = curve_codec_new_server (cert, ctx);
-    assert (server);
-    curve_codec_set_verbose (server, verbose);
-    curve_codec_set_metadata (server, "Server", "CURVEZMQ/curve_codec");
-
-    // void *worker = zsocket_new (ctx, ZMQ_DEALER);
-    // zsocket_connect (worker, "inproc://backend");
+    void *worker = zsocket_new (ctx, ZMQ_DEALER);
+    zsocket_connect (worker, "inproc://backend");
 
     while (true) {
         //  The DEALER socket gives us the reply envelope and message
         printf("expecting frames \n");
-        zframe_t *sender = zframe_recv (router_socket);
-        
-        zframe_t *input = zframe_recv (router_socket);
-        
-        
-        assert (input);
-        zframe_t *output = curve_codec_execute (server, &input);
-        assert (output);
-        zframe_send (&sender, router_socket, ZFRAME_MORE);
-        zframe_send (&output, router_socket, 0);
+            zframe_t *sender = zframe_recv (router_socket);
+            
+            zframe_t *input = zframe_recv (router_socket);
+            
+            
+            assert (input);
+            zframe_t *output = curve_codec_execute (server, &input);
+            assert (output);
+            zframe_send (&sender, router_socket, ZFRAME_MORE);
+            zframe_send (&output, router_socket, 0);
     }
 }
 
