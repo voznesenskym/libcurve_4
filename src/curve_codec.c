@@ -1189,6 +1189,7 @@ server_worker (void *args, zctx_t *ctx, void *pipe)
 
     while (true) {
         //  The DEALER socket gives us the reply envelope and message
+        printf("true \n");
         zmsg_t *msg = zmsg_recv (worker);
         zframe_t *identity = zmsg_pop (msg);
         zframe_t *content = zmsg_pop (msg);
