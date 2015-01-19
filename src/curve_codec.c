@@ -1219,7 +1219,7 @@ curve_codec_test (bool verbose)
     curve_codec_test_2(verbose);
     
     return;
-    
+    server_worker();
     //  Check compiler isn't padding our structures mysteriously
     assert (sizeof (hello_t) == 200);
     assert (sizeof (welcome_t) == 168);
