@@ -1111,6 +1111,35 @@ server_task (void *args)
     return NULL;
 }
 //  @end
+static void
+server_worker (void *args, zctx_t *ctx, void *pipe)
+{
+    // void *worker = zsocket_new (ctx, ZMQ_DEALER);
+    // zsocket_connect (worker, "inproc://backend");
+
+    // while (true) {
+    //     //  The DEALER socket gives us the reply envelope and message
+    //     printf("true \n");
+    //     zmsg_t *msg = zmsg_recv (worker);
+    //     zframe_t *identity = zmsg_pop (msg);
+    //     char *identity_str = zframe_strdup(identity);
+    //     printf("identity_str:   %s \n", identity_str);
+
+    //     zframe_t *content = zmsg_pop (msg);
+    //     char *centent_str = zframe_strdup(content);
+    //     printf("centent_str:   %s \n", centent_str);
+        
+    //     assert (content);
+    //     zmsg_destroy (&msg);
+
+    //     //  Sleep for some fraction of a second
+    //     zframe_send (&identity, worker, ZFRAME_REUSE + ZFRAME_MORE);
+    //     zframe_send (&content, worker, ZFRAME_REUSE);
+
+    //     zframe_destroy (&identity);
+    //     zframe_destroy (&content);
+    // }
+}
 
 void curve_codec_test_2 (bool verbose) {
     printf(" * CURVE _ CODEC _ TEST _ 2 * \n");
@@ -1143,7 +1172,7 @@ void curve_codec_test_2 (bool verbose) {
     bool finished = false;
     while (!finished) {
         
-        if  (!curve_codec_connected (server)) {
+        // if  (!curve_codec_connected (server)) {
             printf("expecting frames \n");
             zframe_t *sender = zframe_recv (router_socket);
             
@@ -1156,27 +1185,39 @@ void curve_codec_test_2 (bool verbose) {
             zframe_send (&sender, router_socket, ZFRAME_MORE);
             zframe_send (&output, router_socket, 0);
             
-        } else {
-        //  Now act as echo service doing a full decode and encode
-            zframe_t *sender = zframe_recv (router_socket);
-            char *sender_str = zframe_strdup(sender);
-            printf("sender_str is %s \n", sender_str);
-            
-            
-            
-            zframe_t *encrypted = zframe_recv (router_socket);
-            assert (encrypted);
-            zframe_t *cleartext = curve_codec_decode (server, &encrypted);
-            
-            char *cleartext_str = zframe_strdup(cleartext);
-            printf("cleartext_str is %s \n", cleartext_str);
-            
-            assert (cleartext);
+        // } else {
 
-            encrypted = curve_codec_encode (server, &cleartext);
-            assert (encrypted);
-            zframe_send (&sender, router_socket, ZFRAME_MORE);
-            zframe_send (&encrypted, router_socket, 0);
+            void *dealer_socket = zsocket_new (ctx, ZMQ_DEALER);
+            zsocket_bind (dealer_socket, "inproc://backend");
+
+            int thread_nbr;
+            for (thread_nbr = 0; thread_nbr < 3; thread_nbr++) {
+                printf("new zthread_fork \n");
+                zthread_fork (ctx, server_worker, NULL);
+            }
+
+            zmq_proxy (router_socket, dealer_socket, NULL);
+
+        //  Now act as echo service doing a full decode and encode
+            // zframe_t *sender = zframe_recv (router_socket);
+            // char *sender_str = zframe_strdup(sender);
+            // printf("sender_str is %s \n", sender_str);
+            
+            
+            
+            // zframe_t *encrypted = zframe_recv (router_socket);
+            // assert (encrypted);
+            // zframe_t *cleartext = curve_codec_decode (server, &encrypted);
+            
+            // char *cleartext_str = zframe_strdup(cleartext);
+            // printf("cleartext_str is %s \n", cleartext_str);
+            
+            // assert (cleartext);
+
+            // encrypted = curve_codec_encode (server, &cleartext);
+            // assert (encrypted);
+            // zframe_send (&sender, router_socket, ZFRAME_MORE);
+            // zframe_send (&encrypted, router_socket, 0);
         }
     }
 }
