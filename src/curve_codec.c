@@ -1156,7 +1156,7 @@ void curve_codec_test_2 (bool verbose) {
     
     //MV: Router socket
     void *router = zsocket_new (ctx, ZMQ_ROUTER);
-    int rc = zsocket_bind (router, "tcp://*:9010");
+    int rc = zsocket_bind (router, "tcp://*:9000");
     printf("\n server task bind \n");
     assert (rc != -1);
 
