@@ -1152,6 +1152,8 @@ void *mv_codec_server_worker() {
         assert (output);
         zframe_send (&sender, router_socket, ZFRAME_MORE);
         zframe_send (&output, router_socket, 0);
+    } else {
+        zthread_fork(ctx, mv_server_worker, NULL) 
     }
     
     return NULL; 
@@ -1174,16 +1176,6 @@ mv_server_worker (void *args, zctx_t *ctx, void *pipe)
     while (true) {
         //  The DEALER socket gives us the reply envelope and message
         printf("expecting frames \n");
-            zframe_t *sender = zframe_recv (router_socket);
-            
-            zframe_t *input = zframe_recv (router_socket);
-            
-            
-            assert (input);
-            zframe_t *output = curve_codec_execute (server, &input);
-            assert (output);
-            zframe_send (&sender, router_socket, ZFRAME_MORE);
-            zframe_send (&output, router_socket, 0);
     }
 }
 
