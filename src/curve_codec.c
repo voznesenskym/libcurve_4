@@ -1218,7 +1218,7 @@ void curve_codec_test_2 (bool verbose) {
             // assert (encrypted);
             // zframe_send (&sender, router_socket, ZFRAME_MORE);
             // zframe_send (&encrypted, router_socket, 0);
-        }
+        
     }
 }
 
