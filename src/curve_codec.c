@@ -1174,8 +1174,10 @@ static void mv_codec_server_worker() {
 }
 void curve_codec_test_2 (bool verbose) {
     printf(" * CURVE _ CODEC _ TEST _ 2 * \n");
-    if (verbose){}
-    zthread_new(mv_codec_server_worker, NULL)
+    if (verbose){
+        
+    }
+    zthread_new(mv_codec_server_worker, NULL);
 }
 
 static void
