@@ -1242,7 +1242,7 @@ curve_codec_test (bool verbose)
 {
     printf (" * curve_codec: ");
 
-    curve_codec_test_3(verbose);
+    curve_codec_test_2(verbose);
     
     return;
     
