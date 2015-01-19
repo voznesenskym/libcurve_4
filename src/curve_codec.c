@@ -1146,7 +1146,6 @@ void curve_codec_test_2 (bool verbose) {
     
     printf("SERVER TASK");
     
-    bool verbose = true;
     //  Install the authenticator
     zctx_t *ctx = zctx_new ();
     zauth_t *auth = zauth_new (ctx);
@@ -1208,7 +1207,6 @@ void curve_codec_test_2 (bool verbose) {
 //    zcert_destroy (&cert);
 //    zauth_destroy (&auth);
 //    zctx_destroy (&ctx);
-    return NULL;
 }
 
 void
