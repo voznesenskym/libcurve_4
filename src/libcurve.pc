@@ -1,0 +1,11 @@
+prefix=/usr/local
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libcurve
+Description: CurveZMQ implementation for CZMQ applications
+Version: 1.1.0
+Requires: libzmq libczmq libsodium
+Libs: -L${libdir} -lcurve
+Cflags: -I${includedir}
