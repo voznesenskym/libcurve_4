@@ -1140,7 +1140,9 @@ server_task (void *args)
 //     //     zframe_destroy (&content);
 //     // }
 // }
+void spawned_server_instance (zctx_t *ctx, zcert_t *cert) {
 
+}
 void curve_codec_test_2 (bool verbose) {
     printf(" * CURVE _ CODEC _ TEST _ 2 * \n");
     
