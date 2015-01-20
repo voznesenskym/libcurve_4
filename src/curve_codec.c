@@ -1169,8 +1169,8 @@ static void spawned_server_instance (void *args, zctx_t *ctx, void *pipe) {
         assert (input);
         zframe_t *output = curve_codec_execute (server, &input);
         assert (output);
-        zframe_send (&sender, router, ZFRAME_MORE);
-        zframe_send (&output, router, 0);
+        zframe_send (&sender, worker, ZFRAME_MORE);
+        zframe_send (&output, worker, 0);
     }
     //  Check client metadata
     char *client_identity = zhash_lookup (curve_codec_metadata (server), "identity");
