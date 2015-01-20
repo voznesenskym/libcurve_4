@@ -1144,9 +1144,12 @@ static void spawned_server_instance (void *args, zctx_t *ctx, void *pipe) {
     zcert_t *cert = zcert_load (CERTDIR "/server.cert");
     assert (cert);
 
+    void *worker = zsocket_new (ctx, ZMQ_DEALER);
+    zsocket_connect (worker, "inproc://backend");
+    
     curve_codec_t *server = curve_codec_new_server (cert, ctx);
     assert (server);
-    curve_codec_set_verbose (server, verbose);
+    curve_codec_set_verbose (server, true);
 
     //  Set some metadata properties
     curve_codec_set_metadata (server, "Server", "CURVEZMQ/curve_codec");
@@ -1156,9 +1159,9 @@ static void spawned_server_instance (void *args, zctx_t *ctx, void *pipe) {
     printf("pre true \n");
     while (!curve_codec_connected (server)) {
         printf("expecting frames \n");
-        zframe_t *sender = zframe_recv (router);
+        zframe_t *sender = zframe_recv (worker);
         
-        zframe_t *input = zframe_recv (router);
+        zframe_t *input = zframe_recv (worker);
         
         char *input_str = zframe_strdup(input);
         printf("input_str is %s \n", input_str);
