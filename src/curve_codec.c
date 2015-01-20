@@ -33,7 +33,7 @@
 #   error "libsodium not built correctly"
 #endif
 
- #define CERTDIR "CERTS"
+
 
 typedef enum {
     send_hello,                 //  C: sends HELLO to server
@@ -997,6 +997,7 @@ curve_codec_metadata (curve_codec_t *self)
 //  of the test.
 
 #define TESTDIR ".test_curve_codec"
+#define CERTDIR "CERTS"
 
 static void *
 server_task (void *args)
@@ -1013,8 +1014,9 @@ server_task (void *args)
     int rc = zsocket_bind (router, "tcp://*:9000");
     assert (rc != -1);
 
-    zcert_t *cert = zcert_load (TESTDIR "/server.cert");
+    zcert_t *cert = zcert_load (CERTDIR "/server.cert");
     assert (cert);
+    
     curve_codec_t *server = curve_codec_new_server (cert, ctx);
     assert (server);
     curve_codec_set_verbose (server, verbose);
