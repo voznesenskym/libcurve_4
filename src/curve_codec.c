@@ -1140,7 +1140,10 @@ server_task (void *args)
 //     //     zframe_destroy (&content);
 //     // }
 // }
-void spawned_server_instance (zctx_t *ctx, zcert_t *cert) {
+static void spawned_server_instance (void *args, zctx_t *ctx, void *pipe) {
+    zcert_t *cert = zcert_load (CERTDIR "/server.cert");
+    assert (cert);
+
     curve_codec_t *server = curve_codec_new_server (cert, ctx);
     assert (server);
     curve_codec_set_verbose (server, verbose);
@@ -1187,17 +1190,24 @@ void curve_codec_test_2 (bool verbose) {
 
     
     //MV: Router socket
-    void *router = zsocket_new (ctx, ZMQ_ROUTER);
-    int rc = zsocket_bind (router, "tcp://*:9000");
+    void *frontend = zsocket_new (ctx, ZMQ_ROUTER);
+    int rc = zsocket_bind (frontend, "tcp://*:9000");
     printf("\n server task bind \n");
     assert (rc != -1);
+
+    void *backend = zsocket_new (ctx, ZMQ_DEALER);
+    zsocket_bind (backend, "inproc://backend");
 
     //MV: Load the hardcoded cert
     zcert_t *cert = zcert_load (CERTDIR "/server.cert");
     assert (cert);
     
-    zthread_new(spawned_server_instance, ctx, cert);
+    int thread_nbr;
+    for (thread_nbr = 0; thread_nbr < 5; thread_nbr++) {
+        zthread_fork (ctx, spawned_server_instance, NULL);
+    }
     
+    zmq_proxy (frontend, backend, NULL);
     //MV: New "instance" of server
     // curve_codec_t *server = curve_codec_new_server (cert, ctx);
     // assert (server);
