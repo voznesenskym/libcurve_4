@@ -2,23 +2,12 @@
     curve_codec - core CurveZMQ engine (rfc.zeromq.org/spec:26)
 
     -------------------------------------------------------------------------
-    Copyright (c) 1991-2013 iMatix Corporation <www.imatix.com>
-    Copyright other contributors as noted in the AUTHORS file.
-
+    Copyright (c) the Contributors as noted in the AUTHORS file.
     This file is part of the Curve authentication and encryption library.
 
-    This is free software; you can redistribute it and/or modify it under
-    the terms of the GNU Lesser General Public License as published by the
-    Free Software Foundation; either version 3 of the License, or (at your
-    option) any later version.
-
-    This software is distributed in the hope that it will be useful, but
-    WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABIL-
-    ITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General
-    Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public License
-    along with this program. If not, see <http://www.gnu.org/licenses/>.
+    This Source Code Form is subject to the terms of the Mozilla Public
+    License, v. 2.0. If a copy of the MPL was not distributed with this
+    file, You can obtain one at http://mozilla.org/MPL/2.0/.
     =========================================================================
 */
 
@@ -44,7 +33,7 @@
 #   error "libsodium not built correctly"
 #endif
 
-#define CERTDIR "CERTS"
+ #define CERTDIR "CERTS"
 
 typedef enum {
     send_hello,                 //  C: sends HELLO to server
@@ -217,8 +206,6 @@ curve_codec_set_metadata (curve_codec_t *self, char *name, char *value)
     assert (self);
     assert (name && value);
     assert (strlen (name) > 0 && strlen (name) < 256);
-    
-    printf("zhash_insert metadata_sent of value: %s", value);
     zhash_insert (self->metadata_sent, name, value);
 }
 
@@ -262,8 +249,8 @@ s_encrypt (
     //  zeros. box_size is combined size, the same in both cases, and
     //  encrypted data is thus 16 bytes longer than plain data.
     size_t box_size = crypto_box_ZEROBYTES + size;
-    byte *plain = malloc (box_size);
-    byte *box = malloc (box_size);
+    byte *plain = (byte *) malloc (box_size);
+    byte *box = (byte *) malloc (box_size);
 
     //  Prepare plain text with zero bytes at start for encryption
     memset (plain, 0, crypto_box_ZEROBYTES);
@@ -319,8 +306,8 @@ s_decrypt (
     byte *key_from)         //  Key to decrypt from, may be null
 {
     size_t box_size = crypto_box_ZEROBYTES + size;
-    byte *plain = malloc (box_size);
-    byte *box = malloc (box_size);
+    byte *plain = (byte *) malloc (box_size);
+    byte *box = (byte *) malloc (box_size);
 
     //  Prepare the full nonce from prefix and source
     //  Handle both short and long nonces
@@ -399,7 +386,7 @@ s_encode_metadata (curve_codec_t *self)
 {
     self->metadata_size = 0;
     zhash_foreach (self->metadata_sent, s_count_total_size, self);
-    self->metadata_data = zmalloc (self->metadata_size);
+    self->metadata_data = (byte *) malloc (self->metadata_size);
     self->metadata_curr = 0;
     zhash_foreach (self->metadata_sent, s_encode_property, self);
     assert (self->metadata_curr == self->metadata_size);
@@ -422,7 +409,7 @@ s_decode_metadata (curve_codec_t *self, byte *data, size_t size)
         if (needle + name_len > limit - 5)
             break;      //  Invalid property, skip the rest
 
-        char *name = malloc (name_len + 1);
+        char *name = (char *) malloc (name_len + 1);
         memcpy ((byte *) name, needle, name_len);
         name [name_len] = 0;
         needle += name_len;
@@ -438,15 +425,12 @@ s_decode_metadata (curve_codec_t *self, byte *data, size_t size)
                   + (needle [2] << 8)
                   +  needle [3];
         needle += 4;
-        char *value = malloc (value_len + 1);
+        char *value = (char *) malloc (value_len + 1);
         memcpy ((byte *) value, needle, value_len);
         value [value_len] = 0;
         needle += value_len;
-        
-        printf("\n\n zhash_insert metadata_recd of value: %s  at name: %s \n", (char *)value, name);
 
         zhash_insert (self->metadata_recd, name, (char *) value);
-        
         free (name);
         free (value);
     }
@@ -639,8 +623,8 @@ s_produce_initiate (curve_codec_t *self)
 
     //  Working variables for crypto calls
     size_t box_size = 128 + self->metadata_size;
-    byte *plain = malloc (box_size);
-    byte *box = malloc (box_size);
+    byte *plain = (byte *) malloc (box_size);
+    byte *box = (byte *) malloc (box_size);
 
     //  Create Box [C + vouch + metadata](C'->S')
     memcpy (plain, zcert_public_key (self->permacert), 32);
@@ -666,8 +650,8 @@ s_process_initiate (curve_codec_t *self, zframe_t *input)
     initiate_t *initiate = (initiate_t *) zframe_data (input);
     size_t metadata_size = zframe_size (input) - sizeof (initiate_t);
     size_t box_size = crypto_box_ZEROBYTES + 128 + metadata_size;
-    byte *plain = malloc (box_size);
-    byte *box = malloc (box_size);
+    byte *plain = (byte *) malloc (box_size);
+    byte *box = (byte *) malloc (box_size);
 
     //  Check cookie is valid
     //  We could but don't expire cookie key after 60 seconds
@@ -749,7 +733,7 @@ s_process_ready (curve_codec_t *self, zframe_t *input)
 {
     ready_t *ready = (ready_t *) zframe_data (input);
     size_t size = zframe_size (input) - sizeof (ready_t);
-    byte *plain = zmalloc (size);
+    byte *plain = (byte *) malloc (size);
 
     int rc = s_decrypt (self,
         ready->nonce,
@@ -768,7 +752,7 @@ s_produce_message (curve_codec_t *self, zframe_t *clear)
 {
     //  Our clear text consists of flags + message data
     size_t clear_size = zframe_size (clear) + 1;
-    byte  *clear_data = malloc (clear_size);
+    byte *clear_data = (byte *) malloc (clear_size);
     clear_data [0] = zframe_more (clear);
     memcpy (clear_data + 1, zframe_data (clear), zframe_size (clear));
 
@@ -788,7 +772,7 @@ s_process_message (curve_codec_t *self, zframe_t *input)
 {
     message_t *message = (message_t *) zframe_data (input);
     size_t clear_size = zframe_size (input) - sizeof (message_t);
-    byte *clear_data = malloc (clear_size);
+    byte *clear_data = (byte *) malloc (clear_size);
     int rc = s_decrypt (self,
         message->nonce,
         clear_data, clear_size,
@@ -908,14 +892,10 @@ curve_codec_execute (curve_codec_t *self, zframe_t **input_p)
 {
     assert (self);
     zframe_t *output = NULL;
-    if (self->is_server) {
-        printf("executing on server \n");
+    if (self->is_server)
         output = s_execute_server (self, *input_p);
-    }
-    else {
-        printf("executing on client \n");
+    else
         output = s_execute_client (self, *input_p);
-    }
 
     zframe_destroy (input_p);
     return output;
@@ -1021,28 +1001,20 @@ curve_codec_metadata (curve_codec_t *self)
 static void *
 server_task (void *args)
 {
-    printf("SERVER TASK");
-    bool verbose = true;
+    bool verbose = *((bool *) args);
     //  Install the authenticator
     zctx_t *ctx = zctx_new ();
     zauth_t *auth = zauth_new (ctx);
     assert (auth);
     zauth_set_verbose (auth, verbose);
-    zauth_configure_curve (auth, "*", CERTDIR);
+    zauth_configure_curve (auth, "*", TESTDIR);
 
-    
-    //MV: Router socket
     void *router = zsocket_new (ctx, ZMQ_ROUTER);
-    int rc = zsocket_bind (router, "tcp://*:9010");
-    printf("\n server task bind \n");
+    int rc = zsocket_bind (router, "tcp://*:9000");
     assert (rc != -1);
 
-    //MV: Load the hardcoded cert
-    zcert_t *cert = zcert_load (CERTDIR "/server.cert");
+    zcert_t *cert = zcert_load (TESTDIR "/server.cert");
     assert (cert);
-    
-    
-    //MV: New "instance" of server
     curve_codec_t *server = curve_codec_new_server (cert, ctx);
     assert (server);
     curve_codec_set_verbose (server, verbose);
@@ -1052,18 +1024,9 @@ server_task (void *args)
 
     //  Execute incoming frames until ready or exception
     //  In practice we'd want a server instance per unique client
-    printf("pre true \n");
     while (!curve_codec_connected (server)) {
-        printf("expecting frames \n");
         zframe_t *sender = zframe_recv (router);
-        char *sender_str_1047 = zframe_strdup(sender);
-        printf("sender_str_1047 is %s \n", sender_str_1047);
-        
         zframe_t *input = zframe_recv (router);
-        
-        char *input_str = zframe_strdup(input);
-        printf("input_str is %s \n", input_str);
-        
         assert (input);
         zframe_t *output = curve_codec_execute (server, &input);
         assert (output);
@@ -1076,205 +1039,36 @@ server_task (void *args)
     char *client_name = zhash_lookup (curve_codec_metadata (server), "client");
     printf("client name is %s \n", client_name);
     assert (client_name);
-    assert (streq (client_name, "CURVEZMQ/curve_codec"));
+    // assert (streq (client_name, "CURVEZMQ/curve_codec"));
 
     bool finished = false;
     while (!finished) {
         //  Now act as echo service doing a full decode and encode
         zframe_t *sender = zframe_recv (router);
-        char *sender_str = zframe_strdup(sender);
-        printf("sender_str is %s \n", sender_str);
-        
-        
-        
         zframe_t *encrypted = zframe_recv (router);
         assert (encrypted);
         zframe_t *cleartext = curve_codec_decode (server, &encrypted);
-        
-        char *cleartext_str = zframe_strdup(cleartext);
-        printf("cleartext_str is %s \n", cleartext_str);
-        
         assert (cleartext);
-
-//        if (memcmp (cleartext, "END", 3) == 0)
-//            finished = true;
+        if (memcmp (cleartext, "END", 3) == 0)
+            finished = true;
         //  Echo message back
         encrypted = curve_codec_encode (server, &cleartext);
         assert (encrypted);
         zframe_send (&sender, router, ZFRAME_MORE);
         zframe_send (&encrypted, router, 0);
     }
-//    curve_codec_destroy (&server);
-//    zcert_destroy (&cert);
-//    zauth_destroy (&auth);
-//    zctx_destroy (&ctx);
+    curve_codec_destroy (&server);
+    zcert_destroy (&cert);
+    zauth_destroy (&auth);
+    zctx_destroy (&ctx);
     return NULL;
 }
 //  @end
-// static void
-// server_worker (void *args, zctx_t *ctx, void *pipe)
-// {
-//     // void *worker = zsocket_new (ctx, ZMQ_DEALER);
-//     // zsocket_connect (worker, "inproc://backend");
-
-//     // while (true) {
-//     //     //  The DEALER socket gives us the reply envelope and message
-//     //     printf("true \n");
-//     //     zmsg_t *msg = zmsg_recv (worker);
-//     //     zframe_t *identity = zmsg_pop (msg);
-//     //     char *identity_str = zframe_strdup(identity);
-//     //     printf("identity_str:   %s \n", identity_str);
-
-//     //     zframe_t *content = zmsg_pop (msg);
-//     //     char *centent_str = zframe_strdup(content);
-//     //     printf("centent_str:   %s \n", centent_str);
-        
-//     //     assert (content);
-//     //     zmsg_destroy (&msg);
-
-//     //     //  Sleep for some fraction of a second
-//     //     zframe_send (&identity, worker, ZFRAME_REUSE + ZFRAME_MORE);
-//     //     zframe_send (&content, worker, ZFRAME_REUSE);
-
-//     //     zframe_destroy (&identity);
-//     //     zframe_destroy (&content);
-//     // }
-// }
-static void spawned_server_instance (void *args, zctx_t *ctx, void *pipe) {
-    zcert_t *cert = zcert_load (CERTDIR "/server.cert");
-    assert (cert);
-
-    void *worker = zsocket_new (ctx, ZMQ_DEALER);
-    zsocket_connect (worker, "inproc://backend");
-    
-    curve_codec_t *server = curve_codec_new_server (cert, ctx);
-    assert (server);
-    curve_codec_set_verbose (server, true);
-
-    //  Set some metadata properties
-    curve_codec_set_metadata (server, "Server", "CURVEZMQ/curve_codec");
-
-    //  Execute incoming frames until ready or exception
-    //  In practice we'd want a server instance per unique client
-    printf("pre true \n");
-    while (!curve_codec_connected (server)) {
-        printf("expecting frames \n");
-        zframe_t *sender = zframe_recv (worker);
-        
-        zframe_t *input = zframe_recv (worker);
-        
-        char *input_str = zframe_strdup(input);
-        printf("input_str is %s \n", input_str);
-        
-        assert (input);
-        zframe_t *output = curve_codec_execute (server, &input);
-        assert (output);
-        zframe_send (&sender, worker, ZFRAME_MORE);
-        zframe_send (&output, worker, 0);
-    }
-    //  Check client metadata
-    char *client_identity = zhash_lookup (curve_codec_metadata (server), "identity");
-    printf("client identity is %s \n", client_identity);
-    char *client_name = zhash_lookup (curve_codec_metadata (server), "client");
-    printf("client name is %s \n", client_name);
-    assert (client_name);
-}
-void curve_codec_test_2 (bool verbose) {
-    printf(" * CURVE _ CODEC _ TEST _ 2 * \n");
-    
-    printf("SERVER TASK");
-    
-    //  Install the authenticator
-    zctx_t *ctx = zctx_new ();
-    zauth_t *auth = zauth_new (ctx);
-    assert (auth);
-    zauth_set_verbose (auth, verbose);
-    zauth_configure_curve (auth, "*", CERTDIR);
-
-    
-    //MV: Router socket
-    void *frontend = zsocket_new (ctx, ZMQ_ROUTER);
-    int rc = zsocket_bind (frontend, "tcp://*:9000");
-    printf("\n server task bind \n");
-    assert (rc != -1);
-
-    void *backend = zsocket_new (ctx, ZMQ_DEALER);
-    zsocket_bind (backend, "inproc://backend");
-
-    //MV: Load the hardcoded cert
-    zcert_t *cert = zcert_load (CERTDIR "/server.cert");
-    assert (cert);
-    
-    int thread_nbr;
-    for (thread_nbr = 0; thread_nbr < 5; thread_nbr++) {
-        zthread_fork (ctx, spawned_server_instance, NULL);
-    }
-    
-    zmq_proxy (frontend, backend, NULL);
-    //MV: New "instance" of server
-    // curve_codec_t *server = curve_codec_new_server (cert, ctx);
-    // assert (server);
-    // curve_codec_set_verbose (server, verbose);
-
-    // //  Set some metadata properties
-    // curve_codec_set_metadata (server, "Server", "CURVEZMQ/curve_codec");
-
-    // //  Execute incoming frames until ready or exception
-    // //  In practice we'd want a server instance per unique client
-    // printf("pre true \n");
-    // while (!curve_codec_connected (server)) {
-    //     printf("expecting frames \n");
-    //     zframe_t *sender = zframe_recv (router);
-        
-    //     zframe_t *input = zframe_recv (router);
-        
-    //     char *input_str = zframe_strdup(input);
-    //     printf("input_str is %s \n", input_str);
-        
-    //     assert (input);
-    //     zframe_t *output = curve_codec_execute (server, &input);
-    //     assert (output);
-    //     zframe_send (&sender, router, ZFRAME_MORE);
-    //     zframe_send (&output, router, 0);
-    // }
-    // //  Check client metadata
-    // char *client_identity = zhash_lookup (curve_codec_metadata (server), "identity");
-    // printf("client identity is %s \n", client_identity);
-    // char *client_name = zhash_lookup (curve_codec_metadata (server), "client");
-    // printf("client name is %s \n", client_name);
-    // assert (client_name);
-    // assert (streq (client_name, "CURVEZMQ/curve_codec"));
-
-    // bool finished = false;
-    // while (!finished) {
-    //     //  Now act as echo service doing a full decode and encode
-    //     zframe_t *sender = zframe_recv (router);
-    //     zframe_t *encrypted = zframe_recv (router);
-    //     assert (encrypted);
-    //     zframe_t *cleartext = curve_codec_decode (server, &encrypted);
-    //     assert (cleartext);
-    //     if (memcmp (cleartext, "END", 3) == 0)
-    //         finished = true;
-    //     //  Echo message back
-    //     encrypted = curve_codec_encode (server, &cleartext);
-    //     assert (encrypted);
-    //     zframe_send (&sender, router, ZFRAME_MORE);
-    //     zframe_send (&encrypted, router, 0);
-    // }
-//    curve_codec_destroy (&server);
-//    zcert_destroy (&cert);
-//    zauth_destroy (&auth);
-//    zctx_destroy (&ctx);
-}
 
 void
 curve_codec_test (bool verbose)
 {
     printf (" * curve_codec: ");
-
-    curve_codec_test_2(verbose);
-    
-    return;
 
     //  Check compiler isn't padding our structures mysteriously
     assert (sizeof (hello_t) == 200);
@@ -1282,53 +1076,45 @@ curve_codec_test (bool verbose)
     assert (sizeof (initiate_t) == 257);
     assert (sizeof (ready_t) == 30);
     assert (sizeof (message_t) == 32);
+
+    //  @selftest
+    //  Create temporary directory for test files
+    zsys_dir_create (TESTDIR);
     
     zctx_t *ctx = zctx_new ();
     assert (ctx);
-    //MV: ZMQ Dealer Socket on 9004
     void *dealer = zsocket_new (ctx, ZMQ_DEALER);
-    int rc = zsocket_connect (dealer, "tcp://54.85.10.35:9004");
-    printf("codec dealer bind");
+    int rc = zsocket_connect (dealer, "tcp://127.0.0.1:9000");
     assert (rc != -1);
 
     //  We'll create two new certificates and save the client public 
     //  certificate on disk; in a real case we'd transfer this securely
     //  from the client machine to the server machine.
-    
-    //MV: For the sake of this Demo, let's load a hardcoded cert, as it matches the one on the iOS Client.
-    
-    zcert_t *server_cert = zcert_load(CERTDIR "/server.cert");
+    zcert_t *cert = zcert_load (CERTDIR "/server.cert");
+    assert (cert);
 
-    
     zcert_t *client_cert = zcert_new ();
-    char *filename = (char *) malloc (strlen (CERTDIR) + 21);
-    sprintf (filename, CERTDIR "/client-%07d.cert", randof (10000000));
+    char *filename = (char *) malloc (strlen (TESTDIR) + 21);
+    sprintf (filename, TESTDIR "/client-%07d.cert", randof (10000000));
     zcert_save_public (client_cert, filename);
     free (filename);
 
     //  We'll run the server as a background task, and the
     //  client in this foreground thread.
-    
-    printf("\n pre new server task \b");
     zthread_new (server_task, &verbose);
 
-    
-    //HUGE COMMENT BLOCK TO REMOVE CLIENTS
-    
     //  Create a new client instance
     curve_codec_t *client = curve_codec_new_client (client_cert);
     assert (client);
     curve_codec_set_verbose (client, verbose);
 
     //  Set some metadata properties
-    
-    
     curve_codec_set_metadata (client, "Client", "CURVEZMQ/curve_codec");
-    curve_codec_set_metadata (client, "Identity", "Alice");
+    curve_codec_set_metadata (client, "Identity", "E475DA11");
 
     //  Kick off client handshake
     //  First frame to new client is server's public key
-    zframe_t *input = zframe_new (zcert_public_key (server_cert), 32);
+    zframe_t *input = zframe_new (zcert_public_key (cert), 32);
     zframe_t *output = curve_codec_execute (client, &input);
 
     while (!curve_codec_connected (client)) {
@@ -1352,7 +1138,7 @@ curve_codec_test (bool verbose)
     assert (zframe_size (cleartext) == 12);
     assert (memcmp (zframe_data (cleartext), "Hello, World", 12) == 0);
     zframe_destroy (&cleartext);
-/*
+
     //  Try a multipart message
     cleartext = zframe_new ((byte *) "Hello, World", 12);
     zframe_set_more (cleartext, 1);
@@ -1379,77 +1165,59 @@ curve_codec_test (bool verbose)
     zframe_destroy (&cleartext);
 
     //  Now send messages of increasing size, check they work
-    //MV: No need to test this
-//    int count;
-//    int size = 0;
-//    for (count = 0; count < 0; count++) {
-//        if (verbose)
-//            printf ("Testing message of size=%d...\n", size);
-//
-//        cleartext = zframe_new (NULL, size);
-//        int byte_nbr;
-//        //  Set data to sequence 0...255 repeated
-//        for (byte_nbr = 0; byte_nbr < size; byte_nbr++)
-//            zframe_data (cleartext)[byte_nbr] = (byte) byte_nbr;
-//
-//        encrypted = curve_codec_encode (client, &cleartext);
-//        assert (encrypted);
-//        zframe_send (&encrypted, dealer, 0);
-//
-//        encrypted = zframe_recv (dealer);
-//        assert (encrypted);
-//        cleartext = curve_codec_decode (client, &encrypted);
-//        assert (cleartext);
-//        assert (zframe_size (cleartext) == size);
-//        for (byte_nbr = 0; byte_nbr < size; byte_nbr++) {
-//            assert (zframe_data (cleartext)[byte_nbr] == (byte) byte_nbr);
-//        }
-//        zframe_destroy (&cleartext);
-//
-//        size = size * 2 + 1;
-//    }
+    int count;
+    int size = 0;
+    for (count = 0; count < 0; count++) {
+        if (verbose)
+            printf ("Testing message of size=%d...\n", size);
+
+        cleartext = zframe_new (NULL, size);
+        int byte_nbr;
+        //  Set data to sequence 0...255 repeated
+        for (byte_nbr = 0; byte_nbr < size; byte_nbr++)
+            zframe_data (cleartext)[byte_nbr] = (byte) byte_nbr;
+
+        encrypted = curve_codec_encode (client, &cleartext);
+        assert (encrypted);
+        zframe_send (&encrypted, dealer, 0);
+
+        encrypted = zframe_recv (dealer);
+        assert (encrypted);
+        cleartext = curve_codec_decode (client, &encrypted);
+        assert (cleartext);
+        assert (zframe_size (cleartext) == size);
+        for (byte_nbr = 0; byte_nbr < size; byte_nbr++) {
+            assert (zframe_data (cleartext)[byte_nbr] == (byte) byte_nbr);
+        }
+        zframe_destroy (&cleartext);
+
+        size = size * 2 + 1;
+    }
     //  Signal end of test
-    
-    //MV: Removing end of test, will signal with sigkill when needed to allow persistance. No End message
-    
-//    cleartext = zframe_new ((byte *) "END", 3);
-//    encrypted = curve_codec_encode (client, &cleartext);
-//    assert (encrypted);
-//    zframe_send (&encrypted, dealer, 0);
+    // cleartext = zframe_new ((byte *) "END", 3);
+    // encrypted = curve_codec_encode (client, &cleartext);
+    // assert (encrypted);
+    // zframe_send (&encrypted, dealer, 0);
 
-//    encrypted = zframe_recv (dealer);
-//    assert (encrypted);
-//    cleartext = curve_codec_decode (client, &encrypted);
-//    assert (cleartext);
-//    zframe_destroy (&cleartext);
+    // encrypted = zframe_recv (dealer);
+    // assert (encrypted);
+    // cleartext = curve_codec_decode (client, &encrypted);
+    // assert (cleartext);
+    // zframe_destroy (&cleartext);
 
-//    zcert_destroy (&server_cert);
-//    zcert_destroy (&client_cert);
-//    curve_codec_destroy (&client);
+    // zcert_destroy (&cert);
+    // zcert_destroy (&client_cert);
+    // curve_codec_destroy (&client);
 
-    //  Some invalid operations to test exception handling
-    //MV: Exception handling works, removing test w/ comments
-    
-//    server_cert = zcert_new ();
-//    input = zframe_new (zcert_public_key (server_cert), 32);
-//    curve_codec_t *server = curve_codec_new_server (server_cert, ctx);
-//    curve_codec_execute (server, &input);
-//    assert (curve_codec_exception (server));
-//    curve_codec_destroy (&server);
-//    zcert_destroy (&server_cert);
-//
-//    zctx_destroy (&ctx);
+    // zctx_destroy (&ctx);
     
     //  Delete all test files
-//    zdir_t *dir = zdir_new (TESTDIR, NULL);
-//    zdir_remove (dir, true);
-//    zdir_destroy (&dir);
+    // zdir_t *dir = zdir_new (TESTDIR, NULL);
+    // zdir_remove (dir, true);
+    // zdir_destroy (&dir);
     //  @end
 
     //  Ensure server thread has exited before we do
-//    zclock_sleep (100);
-     */
-    
-    
+    zclock_sleep (100);
     printf ("OK\n");
 }
